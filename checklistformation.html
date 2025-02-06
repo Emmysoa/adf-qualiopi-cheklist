@@ -1,97 +1,224 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Formation</title>
+import React, { useState } from 'react';
+import { ChevronRight, ChevronDown, Pencil, Trash, Plus, Search } from 'lucide-react';
 
-    <!-- Chargement synchrone des dépendances -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+const FormationTracker = () => {
+  const [formations, setFormations] = useState([{ 
+    id: 1, 
+    name: "Formation 1",
+    expanded: false,
+    comment: "",
+    items: {
+      feuillePresence: false,
+      contrat: false,
+      convocation: false,
+      attestation: false,
+      evaluation: false,
+      documentation: false,
+      programme: false,
+      propal: false,
+      autoPositionnement: false,
+      evaluationAmont: false,
+      evaluationAval: false,
+      evaluationQuizz: false,
+      supportPedagogique: false
+    }
+  }]);
+  const [expandAll, setExpandAll] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-    <!-- Tailwind via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  const checklistItems = [
+    { id: "feuillePresence", label: "Feuille de présence" },
+    { id: "contrat", label: "Contrat" },
+    { id: "convocation", label: "Convocation" },
+    { id: "attestation", label: "Attestation de fin de formation" },
+    { id: "evaluation", label: "Évaluation de satisfaction" },
+    { id: "documentation", label: "Documentation de formation" },
+    { id: "programme", label: "Programme de formation" },
+    { id: "propal", label: "Proposition commerciale (Propal)" },
+    { id: "autoPositionnement", label: "Auto-positionnement" },
+    { id: "evaluationAmont", label: "Évaluation amont" },
+    { id: "evaluationAval", label: "Évaluation aval" },
+    { id: "evaluationQuizz", label: "Évaluation (Quizz)" },
+    { id: "supportPedagogique", label: "Support pédagogique" }
+  ];
 
-    <style>
-        /* Styles de base */
-        .checklist-item {
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .status-complete {
-            color: green;
-        }
-        .status-incomplete {
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+  const calculateProgress = (items) => {
+    const total = Object.values(items).length;
+    const completed = Object.values(items).filter(Boolean).length;
+    return Math.round((completed / total) * 100);
+  };
 
-    <script type="text/babel">
-        const ChecklistApp = () => {
-            const [items, setItems] = React.useState([]);
-            const [newItemName, setNewItemName] = React.useState('');
+  const globalProgress = formations.reduce((acc, formation) => 
+    acc + calculateProgress(formation.items), 0) / formations.length;
 
-            const addItem = () => {
-                if (newItemName.trim()) {
-                    setItems([...items, {
-                        id: Date.now(),
-                        name: newItemName,
-                        completed: false
-                    }]);
-                    setNewItemName('');
+  const toggleFormation = (id) => {
+    setFormations(formations.map(f => 
+      f.id === id ? { ...f, expanded: !f.expanded } : f
+    ));
+  };
+
+  const toggleItem = (formationId, itemId) => {
+    setFormations(formations.map(f => 
+      f.id === formationId 
+        ? { ...f, items: { ...f.items, [itemId]: !f.items[itemId] }} 
+        : f
+    ));
+  };
+
+  const addFormation = () => {
+    const newId = Math.max(...formations.map(f => f.id)) + 1;
+    setFormations([...formations, {
+      id: newId,
+      name: `Formation ${newId}`,
+      expanded: false,
+      comment: "",
+      items: checklistItems.reduce((acc, item) => ({ ...acc, [item.id]: false }), {})
+    }]);
+  };
+
+  const deleteFormation = (id) => {
+    setFormations(formations.filter(f => f.id !== id));
+  };
+
+  const updateFormationName = (id, newName) => {
+    setFormations(formations.map(f => 
+      f.id === id ? { ...f, name: newName } : f
+    ));
+  };
+
+  const updateComment = (id, comment) => {
+    setFormations(formations.map(f => 
+      f.id === id ? { ...f, comment } : f
+    ));
+  };
+
+  const toggleAllFormations = () => {
+    const newExpandState = !expandAll;
+    setExpandAll(newExpandState);
+    setFormations(formations.map(f => ({ ...f, expanded: newExpandState })));
+  };
+
+  const filteredFormations = formations.filter(f => 
+    f.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-xl font-semibold">Suivi des Formations</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Total: {formations.length} formations | Progression globale: {Math.round(globalProgress)}%
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={toggleAllFormations}
+            className="px-4 py-2 text-sm border rounded-md hover:bg-gray-50"
+          >
+            Tout déplier
+          </button>
+          <button 
+            onClick={addFormation}
+            className="px-4 py-2 text-sm bg-blue-900 text-white rounded-md hover:bg-blue-800 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle Formation
+          </button>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <input
+          type="text"
+          placeholder="Nom"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full px-4 py-2 pl-10 border rounded-md"
+        />
+        <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+      </div>
+
+      {/* Formations List */}
+      <div className="space-y-4">
+        {filteredFormations.map(formation => (
+          <div key={formation.id} className="border rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <button 
+                onClick={() => toggleFormation(formation.id)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                {formation.expanded ? 
+                  <ChevronDown className="w-5 h-5" /> : 
+                  <ChevronRight className="w-5 h-5" />
                 }
-            };
+              </button>
+              <span className="text-lg flex-grow">{formation.name}</span>
+              <button
+                onClick={() => {
+                  const newName = prompt("Nouveau nom :", formation.name);
+                  if (newName) updateFormationName(formation.id, newName);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => deleteFormation(formation.id)}
+                className="text-red-400 hover:text-red-600"
+              >
+                <Trash className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium">
+                {calculateProgress(formation.items)}%
+              </span>
+            </div>
 
-            const toggleItem = (id) => {
-                setItems(items.map(item => 
-                    item.id === id ? {...item, completed: !item.completed} : item
-                ));
-            };
+            <textarea
+              placeholder="Ajouter un commentaire..."
+              value={formation.comment}
+              onChange={(e) => updateComment(formation.id, e.target.value)}
+              className="w-full p-3 text-sm border rounded-md mb-4 min-h-[60px]"
+            />
 
-            return (
-                <div className="max-w-2xl mx-auto p-4">
-                    <h1 className="text-2xl font-bold mb-4">Checklist Formation</h1>
-                    
-                    <div className="mb-4">
-                        <input
-                            type="text"
-                            value={newItemName}
-                            onChange={(e) => setNewItemName(e.target.value)}
-                            className="border p-2 mr-2 rounded"
-                            placeholder="Nouvelle tâche"
-                        />
-                        <button
-                            onClick={addItem}
-                            className="bg-blue-500 text-white px-4 py-2 rounded"
-                        >
-                            Ajouter
-                        </button>
-                    </div>
+            {formation.expanded && (
+              <div className="space-y-2">
+                {checklistItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                    onClick={() => toggleItem(formation.id, item.id)}
+                  >
+                    <span className="text-sm text-gray-700">{item.label}</span>
+                    <span className={formation.items[item.id] ? "text-green-500" : "text-red-500"}>
+                      {formation.items[item.id] ? "✓" : "✗"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-                    <div>
-                        {items.map(item => (
-                            <div
-                                key={item.id}
-                                onClick={() => toggleItem(item.id)}
-                                className={`checklist-item ${item.completed ? 'status-complete' : 'status-incomplete'}`}
-                            >
-                                {item.name} {item.completed ? '✓' : '✗'}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-6 text-sm text-gray-500">
+        <span>
+          Affichage {Math.min(1, filteredFormations.length)} - {filteredFormations.length} sur {filteredFormations.length}
+        </span>
+        <div className="flex gap-2">
+          <button disabled className="px-2 py-1 border rounded-md opacity-50">
+            ←
+          </button>
+          <button disabled className="px-2 py-1 border rounded-md opacity-50">
+            →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<ChecklistApp />);
-    </script>
-</body>
-</html>
+export default FormationTracker;
