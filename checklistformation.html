@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Formation</title>
+
+    <!-- React et ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel pour JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide React -->
+    <script src="https://unpkg.com/lucide-react@0.263.1/dist/umd/lucide-react.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Notre composant React -->
+    <script type="text/babel">
+        const FormationChecklist = () => {
+            const [formations, setFormations] = React.useState([]);
+            const [newFormationName, setNewFormationName] = React.useState('');
+            const [expandedComments, setExpandedComments] = React.useState({});
+
+            const emptyChecklist = {
+                programme: false,
+                propal: false,
+                autoPositionnement: false,
+                evaluationAmont: false,
+                evaluationAval: false,
+                evaluationQuizz: false,
+                feuillePresence: false,
+                contrat: false,
+                convocation: false,
+                attestation: false,
+                supportPedagogique: false,
+                evaluationSatisfaction: false,
+                documentationFormation: false
+            };
+
+            const emptyComments = {
+                logistique: '',
+                participants: '',
+                formateur: '',
+                contenu: '',
+                suivi: '',
+                points_attention: ''
+            };
+
+            const checklistLabels = {
+                programme: "Programme de formation",
+                propal: "Proposition commerciale",
+                autoPositionnement: "Auto-positionnement",
+                evaluationAmont: "Évaluation amont",
+                evaluationAval: "Évaluation aval",
+                evaluationQuizz: "Évaluation (Quizz)",
+                feuillePresence: "Feuille de présence",
+                contrat: "Contrat",
+                convocation: "Convocation",
+                attestation: "Attestation de formation",
+                supportPedagogique: "Support pédagogique",
+                evaluationSatisfaction: "Évaluation de satisfaction",
+                documentationFormation: "Documentation de formation"
+            };
+
+            const commentCategories = {
+                logistique: "Logistique & Organisation",
+                participants: "Participants",
+                formateur: "Formateur",
+                contenu: "Contenu & Programme",
+                suivi: "Suivi & Évaluation",
+                points_attention: "Points d'attention"
+            };
+
+            const addFormation = (e) => {
+                e.preventDefault();
+                if (newFormationName.trim()) {
+                    setFormations([
+                        ...formations,
+                        {
+                            id: Date.now(),
+                            nom: newFormationName,
+                            checklist: { ...emptyChecklist },
+                            commentaires: { ...emptyComments }
+                        }
+                    ]);
+                    setNewFormationName('');
+                }
+            };
+
+            const deleteFormation = (id) => {
+                setFormations(formations.filter(formation => formation.id !== id));
+            };
+
+            const toggleStatus = (formationId, item) => {
+                setFormations(formations.map(formation => {
+                    if (formation.id === formationId) {
+                        return {
+                            ...formation,
+                            checklist: {
+                                ...formation.checklist,
+                                [item]: !formation.checklist[item]
+                            }
+                        };
+                    }
+                    return formation;
+                }));
+            };
+
+            const updateComment = (formationId, category, newComment) => {
+                setFormations(formations.map(formation => {
+                    if (formation.id === formationId) {
+                        return {
+                            ...formation,
+                            commentaires: {
+                                ...formation.commentaires,
+                                [category]: newComment
+                            }
+                        };
+                    }
+                    return formation;
+                }));
+            };
+
+            const toggleCommentSection = (formationId) => {
+                setExpandedComments(prev => ({
+                    ...prev,
+                    [formationId]: !prev[formationId]
+                }));
+            };
+
+            const getProgressPercentage = (checklist) => {
+                const total = Object.keys(checklist).length;
+                const completed = Object.values(checklist).filter(value => value).length;
+                return Math.round((completed / total) * 100);
+            };
+
+            return (
+                <div className="space-y-6 w-full max-w-4xl mx-auto">
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <h2 className="text-xl font-bold mb-4">Ajouter une formation</h2>
+                        <form onSubmit={addFormation} className="flex gap-4">
+                            <input
+                                type="text"
+                                value={newFormationName}
+                                onChange={(e) => setNewFormationName(e.target.value)}
+                                placeholder="Nom de la formation"
+                                className="flex-1 p-2 border rounded"
+                            />
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
+                            >
+                                <span>Ajouter</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    {formations.map(formation => (
+                        <div key={formation.id} className="bg-white rounded-lg shadow">
+                            <div className="p-6">
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <h2 className="text-xl font-bold">{formation.nom}</h2>
+                                        <button
+                                            onClick={() => deleteFormation(formation.id)}
+                                            className="p-1 text-red-500 hover:text-red-700"
+                                        >
+                                            Supprimer
+                                        </button>
+                                        <button
+                                            onClick={() => toggleCommentSection(formation.id)}
+                                            className="p-1 text-blue-500 hover:text-blue-700"
+                                        >
+                                            Commentaires
+                                        </button>
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        Progression : {getProgressPercentage(formation.checklist)}%
+                                    </div>
+                                </div>
+
+                                {expandedComments[formation.id] && (
+                                    <div className="mt-4 space-y-4">
+                                        {Object.entries(commentCategories).map(([key, label]) => (
+                                            <div key={key} className="space-y-2">
+                                                <label className="font-medium text-gray-700">{label}</label>
+                                                <textarea
+                                                    value={formation.commentaires[key] || ''}
+                                                    onChange={(e) => updateComment(formation.id, key, e.target.value)}
+                                                    placeholder={`Commentaires sur ${label.toLowerCase()}...`}
+                                                    className="w-full p-2 border rounded min-h-20"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                <div className="mt-4 grid gap-4">
+                                    {Object.entries(formation.checklist).map(([key, value]) => (
+                                        <div
+                                            key={key}
+                                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
+                                            onClick={() => toggleStatus(formation.id, key)}
+                                        >
+                                            <span className="text-lg">{checklistLabels[key]}</span>
+                                            <span className={`font-bold ${value ? 'text-green-500' : 'text-red-500'}`}>
+                                                {value ? '✓' : '✗'}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        // Rendu du composant
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<FormationChecklist />);
+    </script>
+</body>
+</html>
